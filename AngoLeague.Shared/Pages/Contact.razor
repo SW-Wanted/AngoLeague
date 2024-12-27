@@ -1,0 +1,41 @@
+﻿@page "/contact"
+@inject IContact contactService;
+
+<button class="btn btn-primary" @onclick="SelectContact">Select Contact</button>
+
+@if(SelectedContact != null)
+{
+    <ul>
+        <li>ID: @SelectedContact.Id</li>
+        <li>NAME: @SelectedContact.Name</li>
+        <li>EMAIL: @SelectedContact.Email</li>
+    </ul>
+}
+
+@if (Contacts.Any())
+{
+    <ul class="list-group">
+        @foreach(var contact in Contacts)
+        {
+            <li class="list-group-item">ID: @contact.Id</li>
+            <li class="list-group-item">Name: @contact.Name</li>
+            <li class="list-group-item">Email: @contact.Email</li>
+            <li class="list-group-item">Phone number: @contact.PhoneNumber</li>
+        }
+    </ul>
+}
+@code
+{
+    MyContact? SelectedContact = new();
+    List<MyContact> Contacts = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        Contacts = await contactService.GetAll();
+    }
+
+    async Task SelectContact()
+    {
+        SelectedContact = await contactService.GetContact()!;
+    }
+}

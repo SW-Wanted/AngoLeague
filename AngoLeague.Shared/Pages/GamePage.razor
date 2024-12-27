@@ -1,0 +1,247 @@
+﻿@page "/game"
+
+<div class="container mt-3">
+    <h2 class="text-center text-primary">Explorar Jogos</h2>
+    <Mensagem Msg="@msg"></Mensagem>
+    <!-- Exemplo de Formulario -->
+    <EditForm Model=@Game OnValidSubmit="MarcarJogo" OnInvalidSubmit="InvocarErro" class="container-fluid">
+        <DataAnnotationsValidator />
+        @* <ValidationSummary /> *@
+        <div class="form-group mb-3">
+            <label>
+                Estilo do jogo
+                <InputSelect class="form-control" @bind-Value=Game!.Style>
+                    <option value="">Selecionar o tipo de jogo...</option>
+                    @foreach (GameStyle style in Enum.GetValues(typeof(GameStyle)))
+                    {
+                        <option checked="@Game!.Style == style" value="@style">@GameStyleDescription(style)</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+
+        <div class="form-group mb-3">
+            <label>
+                Equipa de casa
+                <InputSelect @bind-Value=Game!.TeamHome!.Id class="form-control">
+                    <option value="">Selecionar o seu time...</option>
+                    @foreach (Team team in Teams)
+                    {
+                        <option value=@team.Id>@team.Name</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+        <div class="form-group mb-3">
+            <label>
+                Equipa de fora
+                <InputSelect @bind-Value=Game!.TeamAway!.Id class="form-control">
+                    <option value="">Selecionar a equipe adversária...</option>
+                    @foreach (Team team in Teams)
+                    {
+                        <option value=@team.Id>@team.Name</option>
+                    }
+                </InputSelect>
+            </label>
+        </div>
+
+        <div class="form-group mb-3">
+            <label>
+                Local do jogo
+                <InputText @bind-Value=Game.Location autocomplete="on" class="form-control" placeholder="Nome do campo" />
+                <ValidationMessage For="@(() => Game.Location)" />
+            </label>
+        </div>
+
+        <div class="form-group mb-3">
+            <label>
+                Data da partida
+                <InputDate TValue="DateTime" @bind-Value=Game.MatchDate class="form-control" />
+            </label>
+        </div>
+
+        <div class="form-group mb-3">
+            <button type="submit" class="btn btn-primary">Marcar jogo</button>
+        </div>
+    </EditForm>
+
+    <!-- Exemplo de Card -->
+    @foreach (Game game in Games)
+    {
+        <div class="card mb-5 shadow border">
+            @* <img src="Assets/img/pic3.jpg" class="card-img-top img-fluid" alt="@game.Location" loading="lazy"> *@
+            <div class="card-header">
+                <h3>@game.GameStyleDescription</h3>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">@game.TeamHome!.Name vs @game.TeamAway!.Name</h5>
+                <p class="card-text">
+                    <strong>Data:</strong> @game.MatchDate<br>
+                    <strong>Local:</strong> @game.Location
+                </p>
+                <div class="d-flex justify-content-between">
+                    <button class="btn btn-primary" @onclick="AssistirJogo">Assistir</button>
+                    <button class="btn btn-outline-secondary" @onclick="ParticiparNoJogo">Participar</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Botão Flutuante -->
+<button class="btn btn-primary rounded-circle p-3 position-fixed" style="bottom: 25px; right: 25px;" @onclick="AbrirModal">
+    <i class="fas fa-plus"></i>
+</button>
+
+@if (MostrarModal)
+{
+    <div class="modal d-block">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Marcar Novo Jogo</h5>
+                    <button type="button" class="btn-close" aria-label="Close" @onclick="FecharModal"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="mb-3">
+                            <label for="equipeAdversaria" class="form-label">Equipe Adversária</label>
+                            <input type="text" class="form-control" id="equipeAdversaria" @bind="NovaEquipeAdversaria">
+                        </div>
+                        <div class="mb-3">
+                            <label for="dataJogo" class="form-label">Data</label>
+                            <input type="date" class="form-control" id="dataJogo" @bind="NovaDataJogo">
+                        </div>
+                        <div class="mb-3">
+                            <label for="localJogo" class="form-label">Local</label>
+                            <input type="text" class="form-control" id="localJogo" @bind="NovoLocalJogo">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="FecharModal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" @onclick="SalvarNovoJogo">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    private bool MostrarModal = false;
+    private string NovaEquipeAdversaria;
+    private DateTime? NovaDataJogo;
+    private string NovoLocalJogo;
+    private List<Game> Games = [];
+    private List<Team> Teams = [];
+    private string msg = "";
+    Game Game = new Game
+        {
+            Id = "0",
+            Style = GameStyle.Friendly,
+            MatchDate = DateTime.Now,
+            TeamHome = new(),
+            TeamAway = new(),
+            Location = string.Empty
+        };
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Task.Delay(1000);
+
+        Teams = new List<Team>
+        {
+            new Team { Id = "1", Name = "Eopartido" },
+            new Team { Id = "2", Name = "Os Betinhos" },
+            new Team { Id = "3", Name = "CAOP C" },
+            new Team { Id = "4", Name = "Engenheiros" },
+            new Team { Id = "5", Name = "Team Cuca" }
+        };
+
+
+        string[] locations = { "4 Campos - Luanda Sul", "Campo da Cidadela", "Campo da Unidade", "Campo da Praia" };
+
+        Games = Enumerable.Range(1, 5).Select(i => new Game
+            {
+                Id = i.ToString(),
+                TeamHome = Teams[i % Teams.Count],
+                TeamAway = Teams[(i + 1) % Teams.Count],
+                MatchDate = DateTime.Now.AddDays(i),
+                Location = locations[i % locations.Length],
+                Style = i % 3 == 0 ? GameStyle.Friendly : i % 3 == 1 ? GameStyle.Bet : GameStyle.Tournament
+            }).ToList();
+
+
+    }
+
+    private void AssistirJogo()
+    {
+        Console.WriteLine("Usuário clicou para assistir o jogo.");
+        // Adicione lógica para assistir o jogo, como redirecionamento ou modal
+    }
+
+    private void ParticiparNoJogo()
+    {
+        Console.WriteLine("Usuário se registrou no jogo.");
+        // Adicione lógica para participar do jogo
+    }
+
+    private void AbrirModal()
+    {
+        MostrarModal = true;
+    }
+
+    private void FecharModal()
+    {
+        MostrarModal = false;
+        NovaEquipeAdversaria = string.Empty;
+        NovaDataJogo = null;
+        NovoLocalJogo = string.Empty;
+    }
+
+    private void SalvarNovoJogo()
+    {
+        Console.WriteLine($"Novo jogo salvo: {NovaEquipeAdversaria} em {NovoLocalJogo} na data {NovaDataJogo}");
+        // Adicione lógica para salvar o jogo
+        FecharModal();
+    }
+
+    private void MarcarJogo()
+    {
+        Game.TeamHome = Teams.FirstOrDefault(t => t.Id == Game.TeamHome.Id);
+        Game.TeamAway = Teams.FirstOrDefault(t => t.Id == Game.TeamAway.Id);
+        if (Game.TeamHome is null || Game.TeamAway is null)
+        {
+            msg = "Selecione as equipes para marcar o jogo!";
+            return;
+        }
+        Games.Add(Game);
+        msg = "Jogo marcado com sucesso!";
+        CriarNovoJogo();
+    }
+
+    private void InvocarErro()
+    {
+        msg = "Erro ao marcar o jogo!";
+    }
+
+    private Game CriarNovoJogo()
+    {
+        return new Game
+            {
+                Id = (Games.Count).ToString(),
+                Style = GameStyle.Friendly,
+                MatchDate = DateTime.Now,
+                TeamHome = new(),
+                TeamAway = new(),
+                Location = string.Empty
+            };
+    }
+
+    private string GameStyleDescription(GameStyle style) =>
+    style switch { GameStyle.Friendly => "Jogo Amistoso", GameStyle.Bet => "Jogo de Aposta", GameStyle.Tournament => "Torneio" };
+}
+
+
