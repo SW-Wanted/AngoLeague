@@ -1,0 +1,8 @@
+{
+  "name": "AngoLeague",
+  "description": "A plataforma centralizada para organizar jogos de futebol de rua, equipas de bairro e torneios amadores em Angola. Conectamos talentos locais e organizamos a paixão nacional.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
